@@ -244,6 +244,7 @@
 #[cfg(test)] #[macro_use] extern crate log;
 
 use std::cell::RefCell;
+use std::char::from_u32;
 use std::marker;
 use std::mem;
 use std::io;
@@ -495,6 +496,20 @@ pub trait Rng {
         AsciiGenerator { rng: self }
     }
 
+    /// Return an iterator of random unicode characters.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use rand::{thread_rng, Rng};
+    ///
+    /// let s: String = thread_rng().gen_unicode_chars().take(10).collect();
+    /// println!("{}", s);
+    /// ```
+    fn gen_unicode_chars<'a>(&'a mut self) -> UnicodeGenerator<'a, Self> where Self: Sized {
+        UnicodeGenerator { rng: self }
+    }
+
     /// Return a random element from `values`.
     ///
     /// Return `None` if `values` is empty.
@@ -638,6 +653,25 @@ impl<'a, R: Rng> Iterator for AsciiGenerator<'a, R> {
         Some(*self.rng.choose(GEN_ASCII_STR_CHARSET).unwrap() as char)
     }
 }
+
+/// Iterator which will continuously generate random unicode characters.
+///
+/// This iterator is created via the [`gen_unicode_chars`] method on [`Rng`].
+///
+/// [`Rng`]: trait.Rng.html
+pub struct UnicodeGenerator<'a, R:'a> {
+    rng: &'a mut R,
+}
+
+impl<'a, R: Rng> Iterator for UnicodeGenerator<'a, R> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<char> {
+        let choice = self.rng.gen_range(0x0000, 0xFFFF);
+        Some(from_u32(choice).unwrap())
+    }
+}
+
 
 /// A random number generator that can be explicitly seeded to produce
 /// the same stream of randomness multiple times.
