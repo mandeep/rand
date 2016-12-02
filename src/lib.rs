@@ -667,8 +667,11 @@ impl<'a, R: Rng> Iterator for UnicodeGenerator<'a, R> {
     type Item = char;
 
     fn next(&mut self) -> Option<char> {
-        let choice = self.rng.gen_range(0x0000, 0xFFFF);
-        Some(from_u32(choice).unwrap())
+        let choice = Some(from_u32(self.rng.gen_range(0x0000, 0xFFFF))).unwrap();
+        match choice {
+            None => None,
+            Some(value) => Some(value)
+        }
     }
 }
 
